@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="cpdetector" default="jar.binaries">
+	<description>
+  A framework for configurable
+  and extendable encoding detection
+  of textual documents.
+ </description>
+	<!-- General Properties -->
+	<property name="project.name" value="cpdetector" />
+	<property name="libdir" value="ext/" />
+	<property name="builddir" value="bin/" />
+	<property name="sourcedir" value="src/" />
+	<property name="testsourcedir" value="test/" />
+	<property name="project.version" value="1.0.10" />
+	<!-- for ant fit testing integration -->
+	<property name="fit.results.dir" value="${basedir}/test/fit/out/" />
+
+	<!-- General paths & filesets. -->
+	<path description="Classpath of project" id="classpath">
+		<pathelement path="${builddir}" />
+		<fileset refid="externalJars" />
+		<fileset refid="testingJars" />
+	</path>
+
+	<fileset description="Source files of project" dir="${basedir}" id="sourcefiles">
+		<include name="**/*.java" />
+	</fileset>
+
+	<fileset description="Test source files of project" dir="${basedir}" id="testsourcefiles">
+		<include name="**/*.java" />
+	</fileset>
+
+	<fileset description="Compiled classfiles of project" dir="${builddir}" id="classfiles">
+		<include name="**/*.class" />
+	</fileset>
+
+	<!--
+     These files will be shipped in the package
+     by extracting them to the project's builddir, befor the
+     whole project is packed into a jar.
+     See the rule integrateJars
+    -->
+	<fileset dir="${basedir}" id="externalJars" description="External library jar files that will be shipped with this *.jar distribution.">
+		<include name="${libdir}/*.jar" />
+		<exclude name="${libdir}/test/**" />
+	</fileset>
+
+	<fileset dir="${basedir}" id="buildJars" description="External library jar files that are needed for the build.">
+		<include name="${libdir}/build/*.jar" />
+	</fileset>
+
+	<fileset dir="${basedir}" id="testingJars" description="External library jar files for testing. Will not be shipped in binary jar release.">
+		<include name="${libdir}/test/**/*.jar" />
+	</fileset>
+
+	<fileset dir="${basedir}" id="testdocuments">
+		<include name="testdocuments/**/*" />
+		<exclude name="**/*bat" />
+		<exclude name="**/*zip" />
+	</fileset>
+	<!-- optional taskdefs -->
+	<!-- Taskdefs -->
+	<!--
+          Shrinking for jarfiles
+     -->
+	<taskdef name="proguard" classname="proguard.ant.ProGuardTask">
+		<classpath>
+			<fileset refid="buildJars" />
+		</classpath>
+	</taskdef>
+	
+	<!-- conditions -->
+	<condition property="is.testdocuments">
+		<available file="testdocuments">
+		</available>
+	</condition>
+
+		<condition property="is.uptodate.externalJars">
+		<and>
+			<available file="${builddir}/antlr/" />
+			<available file="${builddir}/jargs/" />
+			<available file="${builddir}/org/mozilla/" />
+			<!-- one uptodate for every external jar -->
+			<uptodate>
+				<srcfiles refid="externalJars" />
+				<mapper type="merge" to="${builddir}/antlr/" />
+			</uptodate>
+			<uptodate>
+				<srcfiles refid="externalJars" />
+				<mapper type="merge" to="${builddir}/jargs/" />
+			</uptodate>
+			<uptodate>
+				<srcfiles refid="externalJars" />
+				<mapper type="merge" to="${builddir}/org/mozilla/" />
+			</uptodate>
+		</and>
+	</condition>
+
+	<condition property="is.uptodate.parsergrammar.charset">
+		<uptodate srcfile="${sourcedir}/info/monitorenter/cpdetector/io/parser/charsetParser.g" targetfile="${sourcedir}/info/monitorenter/cpdetector/io/parser/EncodingLexer.java">
+		</uptodate>
+	</condition>
+
+	
+	<!-- Report conditions -->
+	<target name="report.testdocuments" unless="is.testdocuments">
+		<echo message="Cannot find testdocuments." />
+		<echo message="Please download from http://sourceforge.net/project/showfiles.php?group_id=114421" />
+	</target>
+
+	<!-- Start of targets -->
+	<!-- compile the java sources -->
+
+
+	<target name="build" depends="build.parser.charset">
+		<mkdir dir="${builddir}" />
+		<echo>Compiling 1.5 core code.</echo>
+		<javac fork="true" debug="true" target="1.5" source="1.5" verbose="false" destdir="${builddir}">
+			<classpath refid="classpath" />
+			<src>
+				<pathelement location="${sourcedir}" />
+				<pathelement location="${testsourcedir}" />
+			</src>
+		</javac>
+	</target>
+
+	<target name="build.parser.charset" unless="is.uptodate.parsergrammar.charset">
+		<antlr target="${sourcedir}/info/monitorenter/cpdetector/io/parser/charsetParser.g" traceLexer="no">
+			<classpath refid="classpath" />
+		</antlr>
+	</target>
+
+	<target name="zip.binaries" depends="jar.binaries">
+		<delete file="${project.name}_${project.version}_binary.zip" />
+		<zip destfile="${project.name}_${project.version}_binary.zip">
+			<fileset refid="externalJars" />
+			<file file="${project.name}_${project.version}.jar" />
+			<file file="binary-release.txt" />
+			<file file="MPL-1.1.txt" />
+			<file file="history.txt" />
+		</zip>
+	</target>
+
+	<!-- Create the jar file for command line parsing support -->
+	<target name="jar.binaries" depends="build">
+		<jar destfile="${project.name}_${project.version}.jar" update="false" manifest="manifest.mf">
+			<fileset dir="${builddir}">
+				<include name="**/*.class" />
+				<exclude name="cpdetector/test/ui/**/*" />
+				<exclude name="junit/**/*" />
+			</fileset>
+		</jar>
+		<!-- 
+	         Shrink the jar file.
+	        -->
+		<proguard obfuscate="false" shrink="true" overloadaggressively="false" warn="true" verbose="true" ignorewarnings="true" optimize="false" printmapping="true" allowaccessmodification="false">
+			<libraryjar>
+				<pathelement path="${java.home}/lib/rt.jar" />
+				<fileset dir="${basedir}/ext/">
+					<include name="*.jar" />
+				</fileset>
+			</libraryjar>
+			<!--
+	             caution: The name attribut value has to be the same expression
+	             as the  destfile of the makejar- target [depend].
+	            -->
+			<injar name="${basedir}/${project.name}_${project.version}.jar" />
+			<outjar name="${basedir}/${project.name}_${project.version}_min.jar" />
+			<!-- Filter -->
+			<keep name="info.monitorenter.cpdetector.*">
+				<method name="*" />
+			</keep>
+			<keep name="info.monitorenter.cpdetector.io.**">
+				<method name="*" />
+
+			</keep>
+			<keep name="util*">
+				<method name="*" />
+			</keep>
+			<!-- keep all Exceptions they are moved outside -->
+			<keep name="antlr.**Exception*">
+			</keep>
+			<!-- keep all Tokens they are moved outside -->
+			<keep name="antlr.**Token*" extends="antlr.Token">
+				<method name="**" />
+			</keep>
+			<!-- 
+				 If several jar files contain obfuscated antlr runtime 
+				 libraries, NoSuchMethodError may occur. 
+	    		-->
+			<keepnames name="antlr.**">
+				<method name="**" />
+				<field name="**" />
+			</keepnames>
+			<!-- 
+				 Don't shrink Charscanner methods away, 
+				 another grammar might need them. 
+				-->
+			<keep name="antlr.CharScanner">
+				<method name="**" />
+				<field name="**" />
+			</keep>
+		</proguard>
+		<!-- Rename the shrinked version to the original name. -->
+
+		<delete file="${basedir}/${project.name}_${project.version}.jar" />
+		<move file="${basedir}/${project.name}_${project.version}_min.jar" tofile="${basedir}/${project.name}_${project.version}.jar" />
+
+	</target>
+
+	<!-- Dependency only for ensuring validity -->
+	<target name="zip.EclipseProject" depends="build">
+		<zip destfile="${project.name}_eclipse_project_${project.version}.zip" basedir="${basedir}/.." update="false">
+			<include name="${project.name}/src/**/*.java" />
+			<!-- antlr grammars -->
+			<include name="${project.name}/src/**/*.g" />
+			<include name="${project.name}/MPL*.txt" />
+			<include name="${project.name}/ext/**/*.jar" />
+			<include name="${project.name}/.classpath" />
+			<include name="${project.name}/.project" />
+			<include name="${project.name}/build.xml" />
+			<include name="${project.name}/manifest.mf" />
+			<include name="${project.name}/doc/javadoc/cpdetector.css" />
+			<include name="${project.name}/test/fit/*" />
+			<!-- Works when  defaultexcludes="no" is set -->
+			<include name="${project.name}/.cvsignore" />
+			<file file="history.txt" />
+
+			<!-- The eclipse builders -->
+			<include name="${project.name}/.externalToolBuilders/**/*" />
+		</zip>
+	</target>
+
+	<target name="zip.testdocuments">
+		<zip destfile="${project.name}_testdocuments_${project.version}.zip">
+			<fileset refid="testdocuments" />
+		</zip>
+	</target>
+
+	<target name="javadoc">
+		<mkdir dir="${basedir}/doc/javadoc" />
+		<javadoc destdir="${basedir}/doc/javadoc" access="protected" use="false" notree="false" nonavbar="false" noindex="false" splitindex="true" Author="true" version="true" nodeprecatedlist="false" nodeprecated="false" doctitle="cpdetector API Documentation version ${project.version}" windowtitle="cpdetector, an extensible codepage-detection framework." Verbose="true" stylesheetfile="${basedir}/doc/javadoc/cpdetector.css" charset="UTF-8" docencoding="UTF-8">
+			<classpath refid="classpath" />
+			<bottom>
+				<![CDATA[Copyleft &#x32A2; 2003-2004 MPL 1.1, <span title='Save the whales!'>All Rights Footloose.</span>]]></bottom>
+		<fileset refid="sourcefiles" />
+		<link offline="false" href="http://java.sun.com/j2se/1.4.2/docs/api/" />
+		<link offline="false" href="http://logging.apache.org/log4j/docs/api/" packagelistLoc="http://logging.apache.org/log4j/docs/api/package-list" />
+		<link offline="false" href="http://www.antlr.org/javadoc/" packagelistLoc="http://www.antlr.org/javadoc/package-list" />
+	</javadoc>
+</target>
+
+<target name="zip.javadoc" depends="javadoc">
+	<description>
+   Zip the javadoc API documentation to a zip named after the property project.name.
+  </description>
+	<zip basedir="${basedir}/doc" destfile="${basedir}/${project.name}-javadoc_${project.version}.zip" includes="**/*.html,**/*.css,package-list" />
+</target>
+
+<!-- remove all classfiles (except antlr sources) and the jar file-->
+<target name="delete.classfiles">
+	<delete verbose="true" failonerror="false">
+		<fileset refid="classfiles" />
+		<fileset dir="${basedir}">
+			<include name="${project.name}_${project.version}.jar" />
+		</fileset>
+	</delete>
+</target>
+
+
+<target name="delete.doc">
+	<description>Delete the generated documentation.</description>
+	<delete includeEmptyDirs="true" verbose="true">
+		<fileset dir="${basedir}">
+			<include name="doc/**/*" />
+			<!-- Also delete the zip file with the doc! -->
+			<include name="${project.name}doc.zip" />
+			<exclude name="doc/cpdetector.css" />
+		</fileset>
+	</delete>
+</target>
+
+<target name="delete.local" depends="delete.classfiles,delete.doc">
+	<description>
+        Delete only the local generated files. This target is intended to
+        be used before the project is checked in into the cmvc.
+      </description>
+</target>
+
+<!--
+      Hard rebuild: scrubbing all classfiles and the generated *.java files of antlr before
+      invoking compilation.
+    -->
+<target name="rebuild" depends="delete.classfiles,build" />
+
+<!-- Junit testing -->
+<target name="test.collection.xml" depends="build,report.testdocuments" if="is.testdocuments">
+	<junit printsummary="yes" haltonfailure="no" filtertrace="true" fork="true" showoutput="true">
+		<classpath refid="classpath" />
+		<sysproperty key="collectionRoot" value="${basedir}/testdocuments/xmlts20031210/xmlconf/japanese/" />
+		<sysproperty key="extensions" value="html,htm,xml,dtd" />
+		<sysproperty key="iterations" value="1" />
+
+		<test name="cpdetector.test.JunitLargeCollectionTest" haltonfailure="no" haltonerror="no" outfile="xmlTest">
+			<formatter type="xml" />
+		</test>
+	</junit>
+</target>
+
+<target name="test.collection.multilingual" depends="build,report.testdocuments" if="is.testdocuments">
+	<junit printsummary="yes" haltonfailure="no" fork="true" filtertrace="true" showoutput="true" forkmode="once">
+		<jvmarg value="-Xmx500M" />
+		<classpath refid="classpath" />
+		<sysproperty key="collectionRoot" value="${basedir}/testdocuments/www.unhchr.ch/" />
+		<sysproperty key="extensions" value="html,htm,xml,dtd" />
+		<sysproperty key="iterations" value="1" />
+
+		<test name="cpdetector.test.JunitLargeCollectionTest" haltonfailure="no" haltonerror="no" outfile="multilingualTest">
+			<formatter type="xml" />
+		</test>
+	</junit>
+</target>
+
+<target name="test.collection.xml.chinese" depends="build,report.testdocuments" if="is.testdocuments">
+	<junit printsummary="yes" haltonfailure="no" fork="true" filtertrace="true" showoutput="true" forkmode="once">
+		<jvmarg value="-Xmx500M" />
+		<classpath refid="classpath" />
+		<sysproperty key="collectionRoot" value="${basedir}/testdocuments/xml.ascc.net/" />
+		<sysproperty key="extensions" value="html,htm,xml,dtd" />
+		<sysproperty key="iterations" value="1" />
+
+		<test name="cpdetector.test.JunitLargeCollectionTest" haltonfailure="no" haltonerror="no" outfile="xmlChineseTest">
+			<formatter type="xml" />
+		</test>
+	</junit>
+</target>
+
+<target name="test.io.jararchive" depends="build">
+	<junit printsummary="yes" haltonfailure="no" filtertrace="true" fork="true" dir="${basedir}" showoutput="true">
+		<classpath refid="classpath" />
+
+		<test name="cpdetector.test.JarArchiveTestCase" haltonfailure="no" haltonerror="no" outfile="jarArchiveTest">
+			<formatter type="plain" />
+		</test>
+	</junit>
+</target>
+
+<target name="runfit" depends="build">
+	<taskdef name="fit" classname="com.cmdev.fit.ant.FitTask">
+		<classpath refid="classpath" />
+	</taskdef>
+	<fit destdir="${fit.results.dir}" fork="true">
+		<classpath refid="classpath" />
+		<fileset dir="${basedir}/test/fit/">
+			<include name="*.html" />
+		</fileset>
+	</fit>
+</target>
+</project>

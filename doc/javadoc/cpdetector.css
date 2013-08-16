@@ -1,0 +1,53 @@
+/*
+cpDetector javadoc style file.
+*/
+
+html, body {
+   margin: 20px 10px;
+   color: #000;
+   background-color: #fff;
+   font: 13px/17px Verdana, sans-serif;
+}
+
+/* For the navigation - frame (in a table): kick margin-left. */
+table {
+  margin-left: -10px;
+}
+
+th,table#userstyle td {
+  padding:4px;
+  text-align: left;
+  vertical-align:top;
+  border: 1px solid #ccc;
+}
+
+th{
+  border: 1px solid #000;
+}
+
+:link { 
+   color: #336699;
+   background-color: transparent;
+   text-decoration: none;
+   font-weight: bold; 
+}
+
+:visited { 
+   color: #336699;
+   background-color: transparent; 
+   text-decoration: none;
+   font-weight: bold; 
+}
+
+:link:hover, :visited:hover { 
+   color: #6FA3C1;
+   background-color: transparent;
+   text-decoration: underline; 
+}
+
+:link:active, :visited:active { 
+   color: #FF0000;
+   background-color: transparent; 
+   text-decoration: none;
+   font-weight: bold; 
+}

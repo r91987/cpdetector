@@ -1,0 +1,89 @@
+<html>
+ <head>
+  <title>Encoding detection test with fit</title>
+  <style type="text/css">
+html, body {
+   margin: 20px 10px;
+   color: #000;
+   background-color: #fff;
+   font: 13px/17px Verdana, sans-serif;
+}
+
+/* For the navigation - frame (in a table): kick margin-left. */
+table {
+  margin-left: -10px;
+}
+
+th,table#userstyle td {
+  padding:4px;
+  text-align: left;
+  vertical-align:top;
+  border: 1px solid #ccc;
+}
+
+th{
+  border: 1px solid #000;
+}
+
+:link { 
+   color: #336699;
+   background-color: transparent;
+   text-decoration: none;
+   font-weight: bold; 
+}
+
+:visited { 
+   color: #336699;
+   background-color: transparent; 
+   text-decoration: none;
+   font-weight: bold; 
+}
+
+:link:hover, :visited:hover { 
+   color: #6FA3C1;
+   background-color: transparent;
+   text-decoration: underline; 
+}
+
+:link:active, :visited:active { 
+   color: #FF0000;
+   background-color: transparent; 
+   text-decoration: none;
+   font-weight: bold; 
+}
+  </style>
+ </head>
+ <body>
+  <h2>Encoding detection test for fit</h2>
+  <p>
+   This test takes the documents specified in the first row of the 
+   following table and runs an encoding detection on it. The result 
+   is compared with the value in the second row. The test result 
+   is written to "cpdetector/test/fit/out/detectURL.html".
+  </p>
+  <p>
+   Please add more rows to the table below. The path in the left row 
+   is relative to the project's basedir "cpdetector". A hint: within the 
+   folder testdocuments there are files called "encoding.verify" where 
+   the right encoding (for the 2nd row) of documents already has been 
+   verified. 
+  </p>
+  <h2> How to run</h2>
+  <p>
+   Run the ANT target "runfit" in the buil.xml of the project. 
+  </p>
+  <wiki>
+  <table border="1">
+   <tr>
+    <td colspan="3"><b>cpdetector.test.DetectURLFixture</b></td>
+   </tr>
+   <tr>
+    <td><b>URL</b>                                           </td><td><b>detectURL()</b>                      </td>
+   </tr>
+   <!-- Start adding new rows here! -->
+   <tr>
+    <td>./testdocuments/stress/illegalHtmlTag/1111.htm       </td><td>otto                                    </td>
+   </tr>
+  </table>
+ </wiki>
+</body>
